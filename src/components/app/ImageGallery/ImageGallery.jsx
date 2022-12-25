@@ -109,7 +109,8 @@ export const ImageGallery = ({ imgName }) => {
                     {showModal && <Modal largeImg={largeImageURL} onToggle={toggleModal} />}
                 </>)
                 
-        }
+    }
+    
 }
 
     ImageGallery.propTypes = {
