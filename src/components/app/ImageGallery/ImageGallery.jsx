@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState, useEffect} from "react";
 import PropTypes from 'prop-types';
 import { ImageGalleryitems } from "../ImageGalleryItem/ImageGalleryItem";
 import Modal from '../Modal/Modal';
@@ -7,100 +7,93 @@ import { Spinner } from "../Loader/Loader";
 import css from './ImageGallery.module.css';
 import { toast } from 'react-toastify';
 
-export default class ImageGallery extends Component {
+export const ImageGallery = ({ imgName }) => {
 
-    static propTypes = {
-    imgName: PropTypes.string.isRequired,
-    
-    };
-    
-    state = {
-        searchName: "",
-        page: 1,
-        showModal: false,
-        largeImageURL: "",
-        status: "idle",
-        loader: false
-    }
-    
+    const [searchName, setSearchName] = useState('');
+    const [page, setPage] = useState(1);
+    const [showModal, setShowModal] = useState(false);
+    const [largeImageURL, setLargeImageURL] = useState("");
+    const [status, setStatus] = useState("idle");
+    const [loader, setLoader] = useState(false);
 
-    toggleModal = (e) => {
+    
+    const toggleModal = (e) => {
         
-        if (this.state.showModal === false) { 
+        if (showModal === false) { 
             const LargeImg = e.currentTarget.id
-            this.setState(state => ({
-                largeImageURL: LargeImg,
-        }))
+            setLargeImageURL(LargeImg)
         }
 
-        this.setState(state => ({
-            showModal: !state.showModal,
-        }))
-        
+        setShowModal(!showModal)       
     }
 
-    loadMore = () => { 
-        this.setState(prevState => ({
-            page: prevState.page + 1,
-        }))
+    const loadMore = () => { 
+        setPage(prevState => prevState + 1)
     }
 
-    componentDidUpdate(prevProps, prevState) { 
-    
-        const prevName = prevProps.imgName;
-        const nextName = this.props.imgName;
-        
+    useEffect(() => {
+
         const options = {
             key: '30076608-453b15a34a4d23543af1b2a78',
-            q: nextName,
+            q: imgName,
             image_type: "photo",
             orientation: "horizontal",
             safesearch: "true",
             per_page: "12",
         }
 
-        if (prevName !== nextName) { 
+        if (options.q === '') {
+            return;
+        }
+        setSearchName('');
+        setPage(1);
+        setStatus("pending")
 
-            this.setState({ searchName: "", page: 1, status: "pending"} ) ;
-            
-            fetch(`https://pixabay.com/api/?key=${options.key}&q=${options.q}&image_type=${options.image_type}&orientation=${options.orientation}&safesearch=${options.safesearch}&page=1&per_page=${options.per_page}`)
+        fetch(`https://pixabay.com/api/?key=${options.key}&q=${options.q}&image_type=${options.image_type}&orientation=${options.orientation}&safesearch=${options.safesearch}&page=1&per_page=${options.per_page}`)
             .then(response => response.json())
                 .then(searchName => {
                     if (searchName.total !== 0) {
                         toast.success(`По вашему запросу найдено ${searchName.total} фотографий`);
-                        this.setState({ searchName: this.filter(searchName.hits), status: "resolved" })
-
+                        setSearchName(filter(searchName.hits))
+                        setStatus("resolved")
                     }
                     else {
                         toast.error("Введите корректное имя запроса");
-                        this.setState({ status: "rejected" })
+                        setStatus("rejected")
                     }
                 })
+    }, [imgName]);
 
+    useEffect(() => {
+
+        const options = {
+            key: '30076608-453b15a34a4d23543af1b2a78',
+            q: imgName,
+            image_type: "photo",
+            orientation: "horizontal",
+            safesearch: "true",
+            per_page: "12",
+        }       
+        if (options.q === '' || page < 2) {
+            return;
         }
+        setLoader(true);
 
-        if (this.state.page > prevState.page) { 
-            
-            this.setState({ loader: true} );
-
-            fetch(`https://pixabay.com/api/?key=${options.key}&q=${options.q}&image_type=${options.image_type}&orientation=${options.orientation}&safesearch=${options.safesearch}&page=${this.state.page}&per_page=${options.per_page}`)
-            .then(response => response.json())
-            .then(searchName => this.setState({searchName: [...prevState.searchName, ...this.filter(searchName.hits)], status: "resolved", loader: false}))
-        }
+        fetch(`https://pixabay.com/api/?key=${options.key}&q=${options.q}&image_type=${options.image_type}&orientation=${options.orientation}&safesearch=${options.safesearch}&page=${page}&per_page=${options.per_page}`)
+        .then(response => response.json())
+            .then(searchName => { setSearchName(prevState => [...prevState, ...filter(searchName.hits)]); setStatus("resolved"); setLoader(false); })
         
-    }
+        
+    }, [page]);
 
-    filter = hits => {
+    const filter = hits => {
         return hits.reduce((allHits, hit) => {
             const data = { id: hit.id, tags: hit.tags, largeImageURL: hit.largeImageURL, webformatURL: hit.webformatURL }
             allHits=[...allHits, data];
             return allHits;
         }, [])
-    
     }
     
-    render() { 
-        const { searchName, status, loader } = this.state;
         if (status === "pending" ) { 
             return (
                 <Spinner />
@@ -110,13 +103,16 @@ export default class ImageGallery extends Component {
             return (
                 <>
                     <ul className={css.ImageGallery}>{searchName.map(({ webformatURL, id, tags, largeImageURL }) =>
-                        (<ImageGalleryitems key={id} webformatURL={webformatURL} tags={tags} largeImageURL={largeImageURL} onToggle={this.toggleModal} />))}
+                        (<ImageGalleryitems key={id} webformatURL={webformatURL} tags={tags} largeImageURL={largeImageURL} onToggle={toggleModal} />))}
                     </ul>
-                    {loader ? <Spinner /> : <LoadMore onClick={this.loadMore} />}
-                    {this.state.showModal && <Modal largeImg={this.state.largeImageURL} onToggle={this.toggleModal} />}
+                    {loader ? <Spinner /> : <LoadMore onClick={loadMore} />}
+                    {showModal && <Modal largeImg={largeImageURL} onToggle={toggleModal} />}
                 </>)
                 
         }
-    }
 }
 
+    ImageGallery.propTypes = {
+    imgName: PropTypes.string.isRequired,
+    
+    };
