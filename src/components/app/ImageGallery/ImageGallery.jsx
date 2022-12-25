@@ -84,7 +84,7 @@ export const ImageGallery = ({ imgName }) => {
             .then(searchName => { setSearchName(prevState => [...prevState, ...filter(searchName.hits)]); setStatus("resolved"); setLoader(false); })
         
         
-    }, [page]);
+    }, [imgName, page]);
 
     const filter = hits => {
         return hits.reduce((allHits, hit) => {

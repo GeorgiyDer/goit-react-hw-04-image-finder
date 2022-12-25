@@ -6,18 +6,18 @@ import css from './Modal.module.css'
 
 const modalRoot = document.querySelector('#modal-root')
 
-export default function Modal({ largeImg, onToggle}) { 
+export default function Modal({ largeImg, onToggle }) {
     
     useEffect(() => {
-        window.addEventListener('keydown', handleKeyDown)
-        return() => window.removeEventListener('keydown', handleKeyDown)
-    }, []);
-    
-    const handleKeyDown = e => { 
+        const handleKeyDown = e => { 
         if (e.code === 'Escape') { 
             onToggle();
         }
     }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [onToggle]);
+    
     
     const handleBackDropClick = e => { 
         if (e.currentTarget === e.target) { 
